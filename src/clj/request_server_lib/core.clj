@@ -1,8 +1,53 @@
 (ns request-server-lib.core
   (:require [clojure.string :as cstring]
             [utils-lib.core :as utils]
-            [ajax-lib.http.mime-type :as mt])
+            [ajax-lib.http.mime-type :as mt]
+            [ajax-lib.http.entity-header :as eh]
+            [ajax-lib.http.request-header :as rh]
+            [ajax-lib.http.general-header :as gh])
   (:import [java.net Socket]))
+
+(defn- pack-request-from-map
+  ""
+  [request-map]
+  (let [request (atom "")
+        request-body (atom nil)
+        request-start-line (:request-start-line request-map)
+        headers (:headers request-map)]
+    (swap!
+      request
+      str
+      request-start-line)
+    (doseq [[m-key
+             m-val] headers]
+      (swap!
+        request
+        str
+        m-key
+        ": "
+        m-val
+        "\r\n"))
+    (when-let [body (:body request-map)]
+      (let [body (if (= (get headers (eh/content-type))
+                        (mt/text-plain))
+                   (.getBytes
+                     body
+                     "UTF-8")
+                   body)]
+        (swap!
+          request
+          str
+          (eh/content-length)
+          ": "
+          (count
+            body)
+          "\r\n\r\n")
+        (reset!
+          request-body
+          body))
+     )
+    [@request
+     @request-body]))
 
 (defn pack-request
   ""
@@ -16,27 +61,38 @@
         body-bytes (.getBytes
                      body
                      "UTF-8")
-        body-length (count
-                      body-bytes)
-        header (str
-                 request-method " " uri " HTTP/1.1\r\n"
-                 "Host: " host ":" port "\r\n"
-                 "Connection: keep-alive\r\n"
-                 "Content-Length:" \space body-length "\r\n"
-                 "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n"
-                 "Accept: text/plain\r\n"
-                 "Accept-Language: en-GB,en;q=0.5\r\n"
-                 "Accept-Encoding: gzip, deflate, br\r\n"
-                 "Referer: http://" host ":" port "/\r\n"
-                 "Content-Type: text/plain\r\n"
-                 "Cookie: session=0149a841-1abd-4470-968c-c558d18cc8be\r\n"
-                 "\r\n")]
+        request-start-line (str
+                             request-method
+                             " "
+                             uri
+                             " HTTP/1.1\r\n")
+        host-header (str
+                      host
+                      ":"
+                      port)
+        referer (str
+                  "http://"
+                  host
+                  ":"
+                  port
+                  "/")
+        request-map {:request-start-line request-start-line
+                     :headers {(rh/host) host-header
+                               (gh/connection) "keep-alive"
+                               (rh/user-agent)
+                                 "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0"
+                               (rh/accept) (mt/text-plain)
+                               (rh/accept-language) "en-GB,en;q=0.5"
+                               (rh/accept-encoding) "gzip, deflate, br"
+                               (rh/referer) referer
+                               (eh/content-type) (mt/text-plain)
+                               (rh/cookie) "session=0149a841-1abd-4470-968c-c558d18cc8be"}
+                     :body body-bytes}
+        request (pack-request-from-map
+                  request-map)]
     ;(print header)
     ;(print body)
-    [(.getBytes
-       header
-       "UTF-8")
-     body-bytes]))
+    request))
 
 (defn send-request
   ""
