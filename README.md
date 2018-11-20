@@ -1,5 +1,5 @@
 # Request server library
-test change
+
 Request server library is clojure project that makes http/https requests through java Socket/SSLSocket of desired IP address and port, and prints out servers response.
 
 ### Installing
