@@ -1,0 +1,1 @@
+keytool -import -alias alias -file cert_file.crt -keypass ultras12 -keystore yourkeystore.jks -storepass ultras12
