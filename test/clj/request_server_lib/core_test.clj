@@ -210,8 +210,12 @@
                                  {:keystore-file-path "./resources/certificate/request_server_lib.jks"})]
       
       (is
-        (nil?
-          ssl-context-instance)
+        (and (not
+               (nil?
+                 ssl-context-instance))
+             (instance?
+               javax.net.ssl.SSLContext
+               ssl-context-instance))
        )
       
      )
@@ -501,7 +505,7 @@
       (Thread/sleep 100)
       
      )
-    
+     
    )
   
  )
@@ -565,17 +569,17 @@
            "text/html")
        )
       
-      (let [html-content (:content response-body-parsed)
-            head-content (:content
-                           (get
-                             html-content
-                             0))
-            title-content (:content
-                            (get
-                               head-content
-                               2))
+      (let [html-element (get
+                           response-body-parsed
+                           1)
+            head-element (first
+                           (:content html-element))
+            title-element (get
+                            (:content head-element)
+                            2)
             title-content-elem (first
-                                 title-content)]
+                                 (:content title-element))]
+        
         (is
           (= title-content-elem
              "Sample")
@@ -618,64 +622,113 @@
        )
      )
     
-    #_(let [parallel-calls 10
-          doseq-times 400
-          req-count (* parallel-calls
-                       doseq-times)
-          result (map
-                   pcalls
-                   (repeat
-                     parallel-calls
-                     (fn []
-                       (let [start-time (java.util.Date.)]
-                         (doseq [i (range doseq-times)]
-                           (fire-request
-                             "sample"
-                             1603
-                             "POST"
-                             "/get-entities"
-                             {:keystore-file-path
-                               "./resources/certificate/sample_server.jks"
-                              :keystore-password "ultras12"
-                              :keystore-type nil
-                              :ssl-context nil}
-                             {:entity-type "person"
-                              :entity-filter {}
-                              :qsort {:first-name 1}
-                              :collation {:locale "sr"}
-                              :rows 25
-                              :pagination true
-                              :projection-include true
-                              :current-page 0
-                              :projection [:first-name
-                                           :last-name
-                                           :height
-                                           :weight
-                                           :birthday
-                                           :gender]}))
-                         (let [end-time (java.util.Date.)]
-                           (- (.getTime
-                                end-time)
-                              (.getTime
-                                start-time))
-                          ))
-                      ))
-                  )
-          final-res (atom 0)]
-      (doseq [res result]
-        (swap!
-          final-res
-          +
-          (first
-            res))
-       )
-      (str
-        (int
-          (/ req-count
-             (/ @final-res
-                1000))
+    (let [host "www.java2s.com"
+          port 80
+          request-method "GET"
+          request-uri "/"
+          certificate-config nil
+          request-body nil
+          processed-response (fire-request
+                               host
+                               port
+                               request-method
+                               request-uri
+                               certificate-config
+                               request-body)
+          response-body (:body processed-response)
+          parsed-response-body (xml/html-parse
+                                 response-body)]
+      (let [html-element (get
+                           parsed-response-body
+                           1)
+            head-element (first
+                           (:content html-element))
+            title-element (get
+                            (:content head-element)
+                            4)
+            title-element-content (first
+                                    (:content title-element))]
+        
+        (is
+          (= title-element-content
+             "Programming Tutorials and Source Code Examples")
          )
-        " RPS"))
+        
+       )
+      
+     )
+    
+   )
+  
+ )
+
+(deftest test-url-through-stream
+  
+  (testing "Test url through stream"
+    
+    (let [response-body (url-through-stream
+                          "https://www.google.com")
+          parsed-response-body (xml/html-parse
+                                 response-body)]
+      
+      (let [html-element (get
+                           parsed-response-body
+                           1)
+            head-element (first
+                           (:content html-element))
+            title-element (get
+                            (:content head-element)
+                            2)
+            title-element-content (first
+                                    (:content title-element))]
+        
+        (is
+          (= title-element-content
+             "Google")
+         )
+        
+       )
+      
+     )
+    
+   )
+  
+ )
+
+(deftest test-url-connection
+  
+  (testing "Test url connection"
+    
+    (let [[response-headers
+           response-body] (url-connection
+                            "http://www.java2s.com")
+          parsed-response-body (xml/html-parse
+                                 response-body)]
+      
+      (is
+        (= (:content-type response-headers)
+           (mt/text-html))
+       )
+      
+      (let [html-element (get
+                           parsed-response-body
+                           1)
+            head-element (first
+                           (:content html-element))
+            title-element (get
+                            (:content head-element)
+                            4)
+            title-element-content (first
+                                    (:content title-element))]
+        
+        (is
+          (= title-element-content
+             "Programming Tutorials and Source Code Examples")
+         )
+        
+       )
+      
+     )
     
    )
   

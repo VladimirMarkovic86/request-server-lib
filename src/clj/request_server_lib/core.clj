@@ -117,22 +117,37 @@
                           host
                           ":"
                           port))
-          origin (if (= port
-                        443)
-                   (str
-                     "https://"
-                     host)
+          origin (if (or (= port
+                            443)
+                         (= port
+                            80))
+                   (if (= port
+                            80)
+                     (str
+                       "http://"
+                       host)
+                     (str
+                       "https://"
+                       host))
                    (str
                      "https://"
                      host
                      ":"
                      port))
-          referer (if (= port
-                         443)
-                    (str
-                      "https://"
-                      host
-                      "/")
+          referer (if (or (= port
+                             443)
+                          (= port
+                             80))
+                    (if (= port
+                             80)
+                      (str
+                        "http://"
+                        host
+                        "/")
+                      (str
+                        "https://"
+                        host
+                        "/"))
                     (str
                       "https://"
                       host
@@ -381,8 +396,11 @@
                          "JKS"))
           keystore-is (FileInputStream.
                         keystore-file-path)
-          pass-char-array (char-array
-                            keystore-password)
+          pass-char-array (when (and keystore-password
+                                     (string?
+                                       keystore-password))
+                            (char-array
+                              keystore-password))
           void (.load
                  keystore
                  keystore-is
@@ -425,11 +443,13 @@
                  port
                  (number?
                    port))
-        (if (and certificate-config
+        (if (and (not= port
+                       80)
+                 certificate-config
                  (map?
                    certificate-config))
-          (when-let [ssl-context-instance (get-ssl-context
-                                            certificate-config)]
+          (if-let [ssl-context-instance (get-ssl-context
+                                          certificate-config)]
             (let [ssl-socket (.createSocket
                                (.getSocketFactory
                                  ssl-context-instance)
@@ -442,6 +462,14 @@
                    "TLSv1.1"
                    "TLSv1.2"
                    "SSLv3"]))
+              (reset!
+                ssl-socket-a
+                ssl-socket))
+            (let [factory (SSLSocketFactory/getDefault)
+                  ssl-socket (.createSocket
+                               factory
+                               host
+                               port)]
               (reset!
                 ssl-socket-a
                 ssl-socket))
@@ -489,23 +517,8 @@
                    (cstring/blank?
                      raw-request-header))
              )
-        (when (and certificate-config
-                   (map?
-                     certificate-config)
-                   (:keystore-file-path certificate-config)
-                   (string?
-                     (:keystore-file-path certificate-config))
-                   (not
-                     (cstring/blank?
-                       (:keystore-file-path certificate-config))
-                    )
-                   (:keystore-password certificate-config)
-                   (string?
-                     (:keystore-password certificate-config))
-                   (not
-                     (cstring/blank?
-                       (:keystore-password certificate-config))
-                    ))
+        (when (not= port
+                    80)
           (.startHandshake
             client-socket))
         (send-request
@@ -521,4 +534,112 @@
           processed-response))
      ))
  )
+
+(defn url-through-stream
+  "Fetch from url through stream, this works with HTTP/2.0"
+  [url-string]
+  (let [url (java.net.URL.
+              url-string) ; eg. "https://www.google.com/"
+        in (java.io.BufferedReader.
+             (java.io.InputStreamReader.
+               (.openStream
+                 url))
+            )]
+    (try
+      (let [in-line (atom "")
+            in-content (atom "")]
+        (while @in-line
+          (reset!
+            in-line
+            (.readLine
+              in))
+          (swap!
+            in-content
+            str
+            @in-line))
+        @in-content)
+      (catch Exception e
+        (println
+          e))
+     )
+   )
+ )
+
+(defn url-connection
+  "Fetch from url connection, doesn't work with HTTP/2.0"
+  [url-string]
+  (let [u (java.net.URL.
+            url-string) ; "http://www.java2s.com"
+        uc (.openConnection
+             u)
+        response-headers (atom {})
+        response-body (atom {})]
+    (.setRequestProperty
+      uc
+      "Accept"
+      "*/*")
+    (.setRequestProperty
+      uc
+      "Accept-Encoding"
+      "gzip, deflate, br")
+    (.setRequestProperty
+      uc
+      "Accept-Language"
+      "sr,en;q=0.5")
+    (.setRequestProperty
+      uc
+      "Cache-Control"
+      "no-cache")
+    (.setRequestProperty
+      uc
+      "Connection"
+      "keep-alive")
+    (.setRequestProperty
+      uc
+      "Pragma"
+      "no-cache")
+    (.setRequestProperty
+      uc
+      "User-Agent"
+      "Mozilla/5.0 (X11; Ubuntu; Linu…) Gecko/20100101 Firefox/66.0")
+    (.connect
+      uc)
+    (swap!
+      response-headers
+      assoc
+      :content-type (.getContentType
+                      uc)
+      :content-encoding (.getContentEncoding
+                          uc)
+      :content-length (.getContentLength
+                        uc)
+      :date (.getDate
+              uc)
+      :last-modified (.getLastModified
+                       uc)
+      :expiration (.getExpiration
+                    uc))
+    (let [is (.getContent
+               uc)
+          body-bytes (atom [])]
+      (when-let [content-length (:content-length
+                                  @response-headers)]
+        (dotimes [i content-length]
+          (let [read-byte (unchecked-byte
+                            (.read
+                              is))]
+            (swap!
+              body-bytes
+              conj
+              read-byte))
+         ))
+      (reset!
+        response-body
+        (String.
+          (byte-array
+            @body-bytes)
+          "UTF-8"))
+     )
+    [@response-headers
+     @response-body]))
 

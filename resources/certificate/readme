@@ -1,1 +1,5 @@
 keytool -import -alias alias -file cert_file.crt -keypass ultras12 -keystore yourkeystore.jks -storepass ultras12
+
+keytool -export -keystore google_keystore_1.jks -alias signFiles -file Example.cer
+
+keytool -import -alias foo -file certfile.cer -keystore publicKey.store
