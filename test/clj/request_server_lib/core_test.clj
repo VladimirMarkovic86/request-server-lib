@@ -159,21 +159,24 @@
                            body)]
       
       (is
-        (and (= raw-request-headers
-                (str
-                  "POST / HTTP/1.1\r\n"
-                  "Accept: */*\r\n"
-                  "Accept-Encoding: gzip, deflate, br\r\n"
-                  "Accept-Language: sr,en;q=0.5\r\n"
-                  "Cache-Control: no-cache\r\n"
-                  "Connection: keep-alive\r\n"
-                  "Host: ide:1604\r\n"
-                  "Origin: https://ide:1604\r\n"
-                  "Pragma: no-cache\r\n"
-                  "Referer: https://ide:1604/\r\n"
-                  "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n\r\n"))
-             (nil?
-               request-body))
+        (= raw-request-headers
+           (str
+             "POST / HTTP/1.1\r\n"
+             "Accept: */*\r\n"
+             "Accept-Encoding: gzip, deflate, br\r\n"
+             "Accept-Language: sr,en;q=0.5\r\n"
+             "Cache-Control: no-cache\r\n"
+             "Connection: keep-alive\r\n"
+             "Host: ide:1604\r\n"
+             "Origin: https://ide:1604\r\n"
+             "Pragma: no-cache\r\n"
+             "Referer: https://ide:1604/\r\n"
+             "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n\r\n"))
+       )
+      
+      (is
+        (nil?
+          request-body)
        )
      
      )
@@ -210,12 +213,15 @@
                                  {:keystore-file-path "./resources/certificate/request_server_lib.jks"})]
       
       (is
-        (and (not
-               (nil?
-                 ssl-context-instance))
-             (instance?
-               javax.net.ssl.SSLContext
-               ssl-context-instance))
+        (not
+          (nil?
+            ssl-context-instance))
+       )
+      
+      (is
+        (instance?
+          javax.net.ssl.SSLContext
+          ssl-context-instance)
        )
       
      )
@@ -235,12 +241,15 @@
                                   :keystore-password "ultras12"})]
       
       (is
-        (and (not
-               (nil?
-                 ssl-context-instance))
-             (instance?
-               javax.net.ssl.SSLContext
-               ssl-context-instance))
+        (not
+          (nil?
+            ssl-context-instance))
+       )
+      
+      (is
+        (instance?
+          javax.net.ssl.SSLContext
+          ssl-context-instance)
        )
       
      )
@@ -252,12 +261,15 @@
                                   :ssl-context nil})]
       
       (is
-        (and (not
-               (nil?
-                 ssl-context-instance))
-             (instance?
-               javax.net.ssl.SSLContext
-               ssl-context-instance))
+        (not
+          (nil?
+            ssl-context-instance))
+       )
+      
+      (is
+        (instance?
+          javax.net.ssl.SSLContext
+          ssl-context-instance)
        )
       
      )
@@ -269,12 +281,15 @@
                                   :ssl-context nil})]
       
       (is
-        (and (not
-               (nil?
-                 ssl-context-instance))
-             (instance?
-               javax.net.ssl.SSLContext
-               ssl-context-instance))
+        (not
+          (nil?
+            ssl-context-instance))
+       )
+      
+      (is
+        (instance?
+          javax.net.ssl.SSLContext
+          ssl-context-instance)
        )
       
      )
@@ -356,12 +371,15 @@
                           certificate-config)]
       
       (is
-        (and (not
-               (nil?
-                 client-socket))
-             (instance?
-               java.net.Socket
-               client-socket))
+        (not
+          (nil?
+            client-socket))
+       )
+      
+      (is
+        (instance?
+          java.net.Socket
+          client-socket)
        )
       
      )
@@ -378,12 +396,15 @@
                           certificate-config)]
       
       (is
-        (and (not
-               (nil?
-                 client-socket))
-             (instance?
-               sun.security.ssl.SSLSocketImpl
-               client-socket))
+        (not
+          (nil?
+            client-socket))
+       )
+      
+      (is
+        (instance?
+          sun.security.ssl.SSLSocketImpl
+          client-socket)
        )
       
      )

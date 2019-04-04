@@ -347,7 +347,7 @@
                          (read-string
                            content-length))
         body-bytes (atom [])
-        read-stream (doseq [itr (range content-length)]
+        read-stream (dotimes [i content-length]
                       (let [read-byte (unchecked-byte
                                         (.read
                                           input-stream))]
@@ -517,8 +517,9 @@
                    (cstring/blank?
                      raw-request-header))
              )
-        (when (not= port
-                    80)
+        (when (instance?
+                javax.net.ssl.SSLSocket
+                client-socket)
           (.startHandshake
             client-socket))
         (send-request
